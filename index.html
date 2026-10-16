@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus Messenger</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ================= AUTH ================= -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-bg"></div>
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-icon">N</div>
+      <h1>Nexus</h1>
+      <p>Современный мессенджер</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="login">Вход</button>
+      <button class="tab" data-tab="register">Регистрация</button>
+    </div>
+
+    <form id="loginForm" class="auth-form active">
+      <div class="input-group">
+        <label>Имя пользователя</label>
+        <div class="input-with-prefix">
+          <span class="prefix">@</span>
+          <input type="text" id="loginUsername" placeholder="username" required autocomplete="username">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Пароль</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary">Войти</button>
+      <p class="error" id="loginError"></p>
+    </form>
+
+    <form id="registerForm" class="auth-form">
+      <div class="avatar-upload" id="regAvatarWrap">
+        <div class="avatar avatar-lg" id="regAvatarPreview">?</div>
+        <div class="avatar-upload-hint">Нажмите, чтобы выбрать аватар</div>
+        <input type="file" id="regAvatarInput" accept="image/*" hidden>
+      </div>
+
+      <div class="input-group">
+        <label>Имя пользователя (a-z, 0-9)</label>
+        <div class="input-with-prefix">
+          <span class="prefix">@</span>
+          <input type="text" id="regUsername" placeholder="username" required minlength="3" maxlength="20"
+                 pattern="[a-z0-9]+" title="Только строчные латинские буквы и цифры" autocomplete="username">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Пароль</label>
+        <input type="password" id="regPassword" placeholder="Минимум 4 символа" required minlength="4" autocomplete="new-password">
+      </div>
+
+      <button type="submit" class="btn-primary">Создать аккаунт</button>
+      <p class="error" id="registerError"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ================= 2FA ================= -->
+<div id="twoFAScreen" class="auth-screen hidden">
+  <div class="auth-bg"></div>
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-icon" style="background:linear-gradient(135deg,#22c55e,#10b981)">🔐</div>
+      <h1>Подтверждение</h1>
+      <p>Введите код из логов сервера</p>
+    </div>
+    <form id="twoFAForm" class="auth-form active">
+      <div class="input-group">
+        <label>6-значный код</label>
+        <input type="text" id="twoFACode" placeholder="000000" maxlength="6" required
+               style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:600" inputmode="numeric">
+      </div>
+      <button type="submit" class="btn-primary">Подтвердить</button>
+      <p class="error" id="twoFAError"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appScreen" class="app-screen hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="user-info" id="myProfileBtn">
+        <div class="avatar" id="myAvatar">?</div>
+        <div>
+          <div class="user-name" id="myName">Пользователь</div>
+          <div class="user-status">в сети</div>
+        </div>
+      </div>
+      <button class="icon-btn admin-btn" id="adminBtn" title="Админ-панель" style="display:none">👑</button>
+      <button class="icon-btn" id="logoutBtn" title="Выйти">⎋</button>
+    </div>
+
+    <div class="search-box">
+      <div class="search-wrap">
+        <span class="search-at">@</span>
+        <input type="text" id="searchInput" placeholder="Поиск: username">
+      </div>
+      <div class="search-results hidden" id="searchResults"></div>
+    </div>
+
+    <div class="chat-list" id="chatList"></div>
+
+    <button class="new-chat-btn" id="newChatBtn">+ Новый чат</button>
+  </aside>
+
+  <main class="chat-area" id="chatArea">
+    <div class="empty-chat" id="emptyChat">
+      <div class="empty-icon">💬</div>
+      <h2>Выберите чат</h2>
+      <p>или создайте новый</p>
+    </div>
+
+    <div class="chat-view hidden" id="chatView">
+      <header class="chat-header">
+        <button class="back-btn" id="backBtn">←</button>
+        <div class="chat-header-click" id="chatHeaderClick">
+          <div class="avatar" id="chatAvatar">?</div>
+          <div>
+            <div class="chat-name" id="chatName">Чат</div>
+            <div class="chat-status" id="chatStatus">@user</div>
+          </div>
+        </div>
+        <button class="icon-btn dots-btn" id="chatDotsBtn" title="Ещё">⋮</button>
+      </header>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="blocked-banner hidden" id="blockedBanner">
+        <span id="blockedText">Вы заблокировали пользователя</span>
+        <button class="btn-secondary small" id="unblockBtn">Разблокировать</button>
+      </div>
+
+      <div class="reply-preview hidden" id="replyPreview">
+        <div class="reply-bar"></div>
+        <div class="reply-body">
+          <div class="reply-title" id="replyTitle">Ответ</div>
+          <div class="reply-text" id="replyText"></div>
+        </div>
+        <button class="reply-close" id="replyClose">✕</button>
+      </div>
+
+      <div class="attachment-panel hidden" id="attachmentPanel">
+        <button class="attach-item" id="attachPhotoBtn">
+          <div class="attach-icon">🖼️</div><span>Фото</span>
+        </button>
+        <button class="attach-item" id="attachFileBtn">
+          <div class="attach-icon">📎</div><span>Файл</span>
+        </button>
+      </div>
+
+      <form class="message-form" id="messageForm">
+        <button type="button" class="icon-btn attach-btn" id="attachBtn" title="Прикрепить">📎</button>
+        <input type="text" id="messageInput" placeholder="Напишите сообщение..." autocomplete="off">
+        <button type="button" class="icon-btn record-btn" id="recordBtn" title="Голосовое">🎤</button>
+        <button type="submit" class="send-btn">➤</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<!-- ================= МОДАЛКИ ================= -->
+
+<!-- Мой профиль -->
+<div class="modal hidden" id="myProfileModal">
+  <div class="modal-content profile-modal">
+    <button class="modal-close" data-close="myProfileModal">✕</button>
+    <div class="profile-body">
+      <div class="avatar avatar-xl" id="profileAvatar">?</div>
+      <div class="profile-username" id="profileUsername">@user</div>
+      <button class="btn-primary" id="editAvatarBtn">Изменить аватарку</button>
+      <input type="file" id="editAvatarInput" accept="image/*" hidden>
+    </div>
+  </div>
+</div>
+
+<!-- Профиль собеседника -->
+<div class="modal hidden" id="userProfileModal">
+  <div class="modal-content profile-modal">
+    <button class="modal-close" data-close="userProfileModal">✕</button>
+    <div class="profile-body">
+      <div class="avatar avatar-xl" id="uProfileAvatar">?</div>
+      <div class="profile-username-row">
+        <span class="profile-username" id="uProfileUsername">@user</span>
+        <button class="copy-btn" id="copyUsernameBtn">📋</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Новый чат -->
+<div class="modal hidden" id="newChatModal">
+  <div class="modal-content">
+    <button class="modal-close" data-close="newChatModal">✕</button>
+    <h3>Новый чат</h3>
+    <p class="modal-hint">Введите @username</p>
+    <div class="input-with-prefix">
+      <span class="prefix">@</span>
+      <input type="text" id="newChatUsername" placeholder="username">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" data-close="newChatModal">Отмена</button>
+      <button class="btn-primary" id="createChat">Создать</button>
+    </div>
+    <p class="error" id="newChatError"></p>
+  </div>
+</div>
+
+<!-- Редактирование -->
+<div class="modal hidden" id="editModal">
+  <div class="modal-content">
+    <button class="modal-close" data-close="editModal">✕</button>
+    <h3>Редактировать</h3>
+    <textarea id="editText" rows="3"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" data-close="editModal">Отмена</button>
+      <button class="btn-primary" id="saveEdit">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Предпросмотр аватарки -->
+<div class="modal hidden" id="avatarCropModal">
+  <div class="modal-content avatar-crop-modal">
+    <button class="modal-close" data-close="avatarCropModal">✕</button>
+    <h3>Предпросмотр аватарки</h3>
+    <div class="avatar-crop-preview">
+      <div class="avatar avatar-crop-circle" id="avatarCropCircle"></div>
+    </div>
+    <div class="avatar-crop-actions">
+      <button class="btn-secondary" id="rotateAvatarBtn">🔄 Повернуть</button>
+      <button class="btn-secondary" id="cancelAvatarBtn">Отмена</button>
+      <button class="btn-primary" id="saveAvatarBtn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Запись голоса -->
+<div class="modal hidden" id="voiceModal">
+  <div class="modal-content voice-modal">
+    <button class="modal-close" data-close="voiceModal">✕</button>
+    <div class="voice-body">
+      <div class="voice-pulse">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring delay1"></div>
+        <div class="pulse-ring delay2"></div>
+        <div class="voice-mic">🎤</div>
+      </div>
+      <div class="voice-timer" id="voiceTimer">00:00</div>
+      <button class="btn-record-stop" id="stopRecordBtn">■ Остановить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Просмотр фото -->
+<div class="modal hidden" id="photoModal">
+  <div class="modal-content photo-modal">
+    <button class="modal-close" data-close="photoModal">✕</button>
+    <img id="photoPreview" alt="">
+    <button class="btn-primary" id="sendPhotoBtn">Отправить</button>
+  </div>
+</div>
+
+<!-- Меню сообщения (ПКМ) -->
+<div class="context-menu hidden" id="contextMenu">
+  <button data-action="reply">↩ Ответить</button>
+  <button data-action="edit">✏ Изменить</button>
+  <button data-action="delete" class="danger">🗑 Удалить</button>
+</div>
+
+<!-- Меню чата (3 точки) -->
+<div class="context-menu hidden" id="chatMenu">
+  <button data-action="clear">🧹 Очистить историю</button>
+  <button data-action="block">🚫 Заблокировать</button>
+  <button data-action="delete-chat" class="danger">🗑 Удалить чат</button>
+</div>
+
+<!-- Админка -->
+<div class="modal hidden" id="adminModal">
+  <div class="modal-content admin-modal">
+    <button class="modal-close" data-close="adminModal">✕</button>
+    <h3>👑 Админ-панель</h3>
+    <p class="modal-hint">ПКМ / зажать — удалить или забанить</p>
+    <div class="admin-list" id="adminList"></div>
+  </div>
+</div>
+
+<!-- Меню для юзера в админке -->
+<div class="context-menu hidden" id="adminContextMenu">
+  <button data-action="admin-ban">⏳ Забанить</button>
+  <button data-action="admin-delete" class="danger">🗑 Удалить аккаунт</button>
+</div>
+
+<!-- Модалка бана (выбор срока) -->
+<div class="modal hidden" id="banModal">
+  <div class="modal-content">
+    <button class="modal-close" data-close="banModal">✕</button>
+    <h3>Забанить <span id="banTarget"></span></h3>
+    <p class="modal-hint">Выберите срок бана</p>
+    <div class="ban-options">
+      <button class="ban-option" data-days="1">1 день</button>
+      <button class="ban-option" data-days="3">3 дня</button>
+      <button class="ban-option" data-days="7">7 дней</button>
+      <button class="ban-option" data-days="30">30 дней</button>
+      <button class="ban-option" data-days="365">1 год</button>
+      <button class="ban-option danger" data-days="36500">Навсегда</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка "Аккаунт удалён" -->
+<div class="modal hidden" id="kickedModal" style="z-index:9999">
+  <div class="modal-content">
+    <h3 id="kickedTitle">Аккаунт удалён</h3>
+    <p class="modal-hint" id="kickedText">Администратор удалил ваш аккаунт</p>
+    <button class="btn-primary" id="kickedBtn">Ок</button>
+  </div>
+</div>
+
+<input type="file" id="hiddenFileInput" hidden>
+<input type="file" id="hiddenPhotoInput" accept="image/*" hidden>
+
+<script src="app.js"></script>
+</body>
+</html>
